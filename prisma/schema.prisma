@@ -25,7 +25,7 @@ model Commit {
 }
 
 model Pull {
-  id           Int        @id @default(autoincrement())
+  id           Int         @id @default(autoincrement())
   number       Int
   state        String
   title        String
@@ -40,10 +40,26 @@ model Pull {
   baseRef      String
   repositoryId Int
   labels       Label[]
-  repo         Repository @relation(fields: [repositoryId], references: [id])
+  repo         Repository  @relation(fields: [repositoryId], references: [id])
   commits      Commit[]
+  PullDetail   PullDetail?
 
   @@map("pulls")
+}
+
+model PullDetail {
+  pullId         Int     @id
+  body           String
+  merged         Boolean
+  comments       Int
+  reviewComments Int
+  commits        Int
+  additions      Int
+  deletions      Int
+  changedFiles   Int
+  pull           Pull    @relation(fields: [pullId], references: [id])
+
+  @@map("pull_details")
 }
 
 model Label {

@@ -1,19 +1,40 @@
 import PrismaClient from '@prisma/client';
 import { prisma } from '../fetch';
-import { Commit, Pull } from './github';
+import { Commit, Pull, PullDetail } from './github';
 
 const DEFAULT_LIMIT = 500;
 
 export async function findAllOpenPullsByRepository(repository: PrismaClient.Repository) {
-  const models = await prisma.pull.findMany({
+  return await prisma.pull.findMany({
     where: {
       state: 'open',
       repo: {
         id: repository.id,
       },
     },
+    include: {
+      repo: true,
+    },
   });
-  return models;
+}
+
+export async function findAllIncompletePullsByRepository(
+  repository: PrismaClient.Repository,
+  options: { limit: number },
+) {
+  return await prisma.pull.findMany({
+    where: {
+      PullDetail: null,
+      repo: {
+        id: repository.id,
+      },
+    },
+    include: {
+      repo: true,
+    },
+    orderBy: { number: 'desc' },
+    take: options.limit,
+  });
 }
 
 export async function findMaxNumberByRepository(repository: PrismaClient.Repository) {
@@ -50,6 +71,35 @@ export async function createPulls(repository: PrismaClient.Repository, pulls: Pu
       baseRef: pull.base.ref,
       repositoryId: repository.id,
     })),
+  });
+}
+
+export async function upsertPullDetail(pull: PrismaClient.Pull, detail: PullDetail) {
+  await prisma.pullDetail.upsert({
+    create: {
+      body: detail.body,
+      merged: detail.merged,
+      comments: detail.comments,
+      reviewComments: detail.reviewComments,
+      commits: detail.commits,
+      additions: detail.additions,
+      deletions: detail.deletions,
+      changedFiles: detail.changedFiles,
+      pullId: pull.id,
+    },
+    where: {
+      pullId: pull.id,
+    },
+    update: {
+      body: detail.body,
+      merged: detail.merged,
+      comments: detail.comments,
+      reviewComments: detail.reviewComments,
+      commits: detail.commits,
+      additions: detail.additions,
+      deletions: detail.deletions,
+      changedFiles: detail.changedFiles,
+    },
   });
 }
 
@@ -90,6 +140,16 @@ export async function createCommits(pull: PrismaClient.Pull, commits: Commit[]) 
 
 export async function removeCommitsByPulls(pulls: PrismaClient.Pull[]) {
   await prisma.commit.deleteMany({
+    where: {
+      pullId: {
+        in: pulls.map((pull) => pull.id),
+      },
+    },
+  });
+}
+
+export async function removePullDetailsByPulls(pulls: PrismaClient.Pull[]) {
+  await prisma.pullDetail.deleteMany({
     where: {
       pullId: {
         in: pulls.map((pull) => pull.id),

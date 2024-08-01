@@ -1,6 +1,11 @@
 import { PrismaClient } from '@prisma/client';
 import { initialize } from './initialize';
-import { fetchAllNewPulls, fetchCommitsByPull, fetchRateLimit } from './repositories/github';
+import {
+  fetchAllNewPulls,
+  fetchCommitsByPull,
+  fetchPullDetail,
+  fetchRateLimit,
+} from './repositories/github';
 import {
   createCommits,
   createPulls,
@@ -8,6 +13,9 @@ import {
   findMaxNumberByRepository,
   removeCommitsByPulls,
   findAllPullsWhereCommitsIsEmptyByRepository,
+  findAllIncompletePullsByRepository,
+  upsertPullDetail,
+  removePullDetailsByPulls,
 } from './repositories/db';
 
 export const prisma = new PrismaClient();
@@ -31,6 +39,20 @@ async function main() {
     {
       const pulls = await findAllOpenPullsByRepository(repository);
       await removeCommitsByPulls(pulls);
+      await removePullDetailsByPulls(pulls);
+    }
+    // PR詳細の取得
+    {
+      const rateLimit = await fetchRateLimit();
+      const limit = Math.floor(rateLimit.rate.remaining / 2);
+      console.log(`limit: ${limit}, remaining: ${rateLimit.rate.remaining}`);
+      const pulls = await findAllIncompletePullsByRepository(repository, {
+        limit,
+      });
+      for (const pull of pulls) {
+        const pullDetail = await fetchPullDetail(pull);
+        await upsertPullDetail(pull, pullDetail);
+      }
     }
     // コミットの取得
     {

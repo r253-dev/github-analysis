@@ -70,6 +70,17 @@ export type Pull = {
   };
 };
 
+export type PullDetail = {
+  body: string;
+  merged: boolean;
+  comments: number;
+  reviewComments: number;
+  commits: number;
+  additions: number;
+  deletions: number;
+  changedFiles: number;
+};
+
 export type Commit = {
   nodeId: string;
   sha: string;
@@ -119,6 +130,19 @@ function toPullResponse(pull: any): Pull {
         },
       },
     },
+  };
+}
+
+function toPullDetailResponse(detail: any): PullDetail {
+  return {
+    body: detail.body,
+    merged: detail.merged,
+    comments: detail.comments,
+    reviewComments: detail.review_comments,
+    commits: detail.commits,
+    additions: detail.additions,
+    deletions: detail.deletions,
+    changedFiles: detail.changed_files,
   };
 }
 
@@ -182,6 +206,22 @@ export async function fetchAllNewPulls(repositoryFullName: string, minNumber: nu
     pulls.push(...response);
   }
   return pulls.map(toPullResponse);
+}
+
+export async function fetchPullDetail(pull: PrismaClient.Pull & { repo: PrismaClient.Repository }) {
+  console.log(`fetch ${pull.repo.fullName}#${pull.number} detail`);
+  const response = await axios.get(
+    `https://api.github.com/repos/${pull.repo.fullName}/pulls/${pull.number}`,
+    {
+      headers: {
+        Authorization: `Bearer ${GH_TOKEN}`,
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+    },
+  );
+
+  return toPullDetailResponse(response.data);
 }
 
 export async function fetchRepository(repo: string) {
