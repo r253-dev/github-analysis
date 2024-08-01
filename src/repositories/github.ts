@@ -1,3 +1,4 @@
+import PrismaClient from '@prisma/client';
 import axios from 'axios';
 
 const GH_TOKEN = process.env.GH_TOKEN;
@@ -69,6 +70,16 @@ export type Pull = {
   };
 };
 
+export type Commit = {
+  nodeId: string;
+  sha: string;
+  commit: {
+    message: string;
+    authorName: string;
+    date: Date;
+  };
+};
+
 function toPullResponse(pull: any): Pull {
   return {
     id: pull.id,
@@ -127,6 +138,18 @@ function toRepositoryResponse(repository: any) {
   };
 }
 
+function toCommitResponse(commit: any): Commit {
+  return {
+    nodeId: commit.node_id,
+    sha: commit.sha,
+    commit: {
+      message: commit.commit.message,
+      authorName: commit.commit.author.name,
+      date: new Date(commit.commit.author.date),
+    },
+  };
+}
+
 /**
  * minNumberに指定したPRよりも大きいPR番号のPRを取得する
  * @param repositoryFullName リポジトリ名
@@ -170,6 +193,31 @@ export async function fetchRepository(repo: string) {
     },
   });
   return toRepositoryResponse(response.data);
+}
+
+export async function fetchCommitsByPull(
+  pull: PrismaClient.Pull & { repo: PrismaClient.Repository },
+) {
+  const PER_PAGE = 100;
+  const commits = [];
+  for (let page = 1; ; page++) {
+    console.log(`fetch ${pull.repo.fullName}#${pull.number} commits page ${page}`);
+    const response = await axios.get(
+      `https://api.github.com/repos/${pull.repo.fullName}/pulls/${pull.number}/commits?per_page=${PER_PAGE}&page=${page}`,
+      {
+        headers: {
+          Authorization: `Bearer ${GH_TOKEN}`,
+          Accept: 'application/vnd.github+json',
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+      },
+    );
+    commits.push(...response.data);
+    if (response.data.length !== PER_PAGE) {
+      break;
+    }
+  }
+  return commits.map(toCommitResponse);
 }
 
 export async function fetchRateLimit(): Promise<RateLimit> {
