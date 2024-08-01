@@ -3,7 +3,12 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "lint": "eslint ./src/**/*.ts",
+    "start": "dotenv ts-node src/index.ts",
+    "start:register": "dotenv ts-node src/register.ts -- ",
+    "db:migrate": "prisma migrate deploy",
+    "db:migrate:create": "prisma migrate dev --create-only --name ",
+    "prisma:generate": "prisma generate"
   },
   "author": "",
   "license": "MIT",
