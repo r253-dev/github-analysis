@@ -29,42 +29,82 @@ type RateLimit = {
   rate: RateLimitItem;
 };
 
-function toPullResponse(pull: any) {
+export type Pull = {
+  id: number;
+  number: number;
+  state: State;
+  title: string;
+  user: {
+    login: string;
+  };
+  body: string;
+  created_at: Date;
+  updated_at: Date;
+  closed_at: Date;
+  merged_at: Date;
+  assignees: {
+    login: string;
+  }[];
+  labels: Label[];
+  draft: boolean;
+  head: {
+    ref: string;
+    repo: {
+      name: string;
+      fullName: string;
+      owner: {
+        login: string;
+      };
+    };
+  };
+  base: {
+    ref: string;
+    repo: {
+      name: string;
+      fullName: string;
+      owner: {
+        login: string;
+      };
+    };
+  };
+};
+
+function toPullResponse(pull: any): Pull {
   return {
-    id: pull.id as number,
-    number: pull.number as number,
-    state: pull.state as State,
-    title: pull.title as string,
+    id: pull.id,
+    number: pull.number,
+    state: pull.state,
+    title: pull.title,
     user: {
-      login: pull.user.login as string,
+      login: pull.user.login,
     },
-    body: pull.body as string,
+    body: pull.body,
     created_at: new Date(pull.created_at),
     updated_at: new Date(pull.updated_at),
     closed_at: new Date(pull.closed_at),
     merged_at: new Date(pull.merged_at),
     assignees: pull.assignees.map((assignee: User) => ({
       login: assignee.login,
-    })) as { login: string }[],
-    labels: pull.labels as Label[],
-    draft: pull.draft as boolean,
+    })),
+    labels: pull.labels,
+    draft: pull.draft,
     head: {
-      ref: pull.head.ref as string,
+      ref: pull.head.ref,
       repo: {
-        name: pull.head.repo.name as string,
-        fullName: pull.head.repo.full_name as string,
+        name: pull.head.repo.name,
+        fullName: pull.head.repo.full_name,
         owner: {
-          login: pull.head.repo.owner.login as string,
+          login: pull.head.repo.owner.login,
         },
       },
     },
     base: {
-      ref: pull.base.ref as string,
+      ref: pull.base.ref,
       repo: {
-        name: pull.base.repo.name as string,
-        fullName: pull.base.repo.full_name as string,
+        name: pull.base.repo.name,
+        fullName: pull.base.repo.full_name,
         owner: {
-          login: pull.base.repo.owner.login as string,
+          login: pull.base.repo.owner.login,
         },
       },
     },

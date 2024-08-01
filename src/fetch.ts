@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { initialize } from './initialize';
 import { fetchAllNewPulls } from './repositories/github';
+import { createPulls, findMaxNumberByRepository } from './repositories/db';
 
 export const prisma = new PrismaClient();
 
@@ -13,32 +14,12 @@ async function main() {
   }
 
   for (const repository of repositories) {
-    const result = await prisma.pull.findFirst({
-      select: { number: true },
-      where: { repo: { fullName: repository.fullName } },
-      orderBy: { number: 'desc' },
-    });
-
-    const pulls = await fetchAllNewPulls(repository.fullName, result && result.number);
-
-    await prisma.pull.createMany({
-      data: pulls.map((pull) => ({
-        id: pull.id,
-        number: pull.number,
-        state: pull.state,
-        title: pull.title,
-        userLogin: pull.user.login,
-        createdAt: new Date(pull.created_at),
-        updatedAt: new Date(pull.updated_at),
-        closedAt: pull.closed_at ? new Date(pull.closed_at) : null,
-        mergedAt: pull.merged_at ? new Date(pull.merged_at) : null,
-        assignees: pull.assignees.join(','),
-        draft: pull.draft,
-        headRef: pull.head.ref,
-        baseRef: pull.base.ref,
-        repositoryId: repository.id,
-      })),
-    });
+    // 新しいPRの取得
+    {
+      const result = await findMaxNumberByRepository(repository);
+      const pulls = await fetchAllNewPulls(repository.fullName, result);
+      await createPulls(repository, pulls);
+    }
   }
 }
 
