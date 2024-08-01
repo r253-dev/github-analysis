@@ -32,7 +32,7 @@ export async function findAllIncompletePullsByRepository(
     include: {
       repo: true,
     },
-    orderBy: { number: 'desc' },
+    orderBy: { number: 'asc' },
     take: options.limit,
   });
 }
@@ -75,32 +75,43 @@ export async function createPulls(repository: PrismaClient.Repository, pulls: Pu
 }
 
 export async function upsertPullDetail(pull: PrismaClient.Pull, detail: PullDetail) {
-  await prisma.pullDetail.upsert({
-    create: {
-      body: detail.body,
-      merged: detail.merged,
-      comments: detail.comments,
-      reviewComments: detail.reviewComments,
-      commits: detail.commits,
-      additions: detail.additions,
-      deletions: detail.deletions,
-      changedFiles: detail.changedFiles,
-      pullId: pull.id,
-    },
-    where: {
-      pullId: pull.id,
-    },
-    update: {
-      body: detail.body,
-      merged: detail.merged,
-      comments: detail.comments,
-      reviewComments: detail.reviewComments,
-      commits: detail.commits,
-      additions: detail.additions,
-      deletions: detail.deletions,
-      changedFiles: detail.changedFiles,
-    },
-  });
+  const exists = !!(await prisma.pullDetail.findFirst({ where: { pullId: pull.id } }));
+  if (exists) {
+    await prisma.pullDetail.update({
+      where: {
+        pullId: pull.id,
+      },
+      data: {
+        pullId: pull.id,
+        body: detail.body,
+        merged: detail.merged,
+        comments: detail.comments,
+        reviewComments: detail.reviewComments,
+        commits: detail.commits,
+        additions: detail.additions,
+        deletions: detail.deletions,
+        changedFiles: detail.changedFiles,
+      },
+    });
+  } else {
+    await prisma.pullDetail.create({
+      data: {
+        body: detail.body,
+        merged: detail.merged,
+        comments: detail.comments,
+        reviewComments: detail.reviewComments,
+        commits: detail.commits,
+        additions: detail.additions,
+        deletions: detail.deletions,
+        changedFiles: detail.changedFiles,
+        pull: {
+          connect: {
+            id: pull.id,
+          },
+        },
+      },
+    });
+  }
 }
 
 export async function findAllPullsWhereCommitsIsEmptyByRepository(

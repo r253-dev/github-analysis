@@ -49,7 +49,7 @@ model Pull {
 
 model PullDetail {
   pullId         Int     @id
-  body           String
+  body           String?
   merged         Boolean
   comments       Int
   reviewComments Int
