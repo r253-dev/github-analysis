@@ -16,11 +16,24 @@ type Label = {
   description: string;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type RateLimitItem = {
+  limit: number;
+  used: number;
+  remaining: number;
+  reset: number;
+};
+type RateLimit = {
+  resources: {
+    core: RateLimitItem;
+  };
+  rate: RateLimitItem;
+};
+
 function toPullResponse(pull: any) {
   return {
+    id: pull.id as number,
     number: pull.number as number,
-    state: pull.status as State,
+    state: pull.state as State,
     title: pull.title as string,
     user: {
       login: pull.user.login as string,
@@ -31,8 +44,8 @@ function toPullResponse(pull: any) {
     closed_at: new Date(pull.closed_at),
     merged_at: new Date(pull.merged_at),
     assignees: pull.assignees.map((assignee: User) => ({
-      login: assignee.login as string,
-    })),
+      login: assignee.login,
+    })) as { login: string }[],
     labels: pull.labels as Label[],
     draft: pull.draft as boolean,
     head: {
@@ -58,7 +71,6 @@ function toPullResponse(pull: any) {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function toRepositoryResponse(repository: any) {
   return {
     id: repository.id as number,
@@ -75,24 +87,36 @@ function toRepositoryResponse(repository: any) {
   };
 }
 
-export async function fetchAllPulls(repo: string) {
-  const pulls = [];
-  for (let page = 1; ; page++) {
-    const response = await axios.get(
-      `https://api.github.com/repos/${repo}/pulls?state=all&per_page=100&page=${page}`,
-      {
-        headers: {
-          Authorization: `Bearer ${GH_TOKEN}`,
-          Accept: 'application/vnd.github+json',
-          'X-GitHub-Api-Version': '2022-11-28',
-        },
-      },
-    );
+/**
+ * minNumberに指定したPRよりも大きいPR番号のPRを取得する
+ * @param repositoryFullName リポジトリ名
+ * @param minNumber PR番号の最小値。ここで指定した最小値を超えるPRのみを取得する
+ * @returns PR
+ */
+export async function fetchAllNewPulls(repositoryFullName: string, minNumber: number | null) {
+  const rateLimit = await fetchRateLimit();
 
-    if (response.data.length === 0) {
+  const pulls = [];
+  for (let page = 1; page < rateLimit.rate.remaining; page++) {
+    console.log(`${repositoryFullName} page: ${page}`);
+    const response = (
+      await axios.get(
+        `https://api.github.com/repos/${repositoryFullName}/pulls?state=all&per_page=100&page=${page}`,
+        {
+          headers: {
+            Authorization: `Bearer ${GH_TOKEN}`,
+            Accept: 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28',
+          },
+        },
+      )
+    ).data.filter((row: any) => minNumber === null || row.number > minNumber);
+
+    if (response.length === 0) {
       break;
     }
-    pulls.push(...response.data);
+
+    pulls.push(...response);
   }
   return pulls.map(toPullResponse);
 }
@@ -106,4 +130,16 @@ export async function fetchRepository(repo: string) {
     },
   });
   return toRepositoryResponse(response.data);
+}
+
+export async function fetchRateLimit(): Promise<RateLimit> {
+  const response = await axios.get(`https://api.github.com/rate_limit`, {
+    headers: {
+      Authorization: `Bearer ${GH_TOKEN}`,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+    },
+  });
+  console.log({ remaining: response.data.rate.remaining, reset: response.data.rate.reset });
+  return response.data;
 }

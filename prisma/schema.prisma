@@ -21,8 +21,8 @@ model Pull {
   userLogin    String
   createdAt    DateTime
   updatedAt    DateTime
-  closedAt     DateTime
-  mergedAt     DateTime
+  closedAt     DateTime?
+  mergedAt     DateTime?
   assignees    String
   draft        Boolean
   headRef      String
