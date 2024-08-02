@@ -41,8 +41,8 @@ export type Pull = {
   body: string;
   created_at: Date;
   updated_at: Date;
-  closed_at: Date;
-  merged_at: Date;
+  closed_at: Date | null;
+  merged_at: Date | null;
   assignees: {
     login: string;
   }[];
@@ -103,8 +103,8 @@ function toPullResponse(pull: any): Pull {
     body: pull.body,
     created_at: new Date(pull.created_at),
     updated_at: new Date(pull.updated_at),
-    closed_at: new Date(pull.closed_at),
-    merged_at: new Date(pull.merged_at),
+    closed_at: pull.closed_at && new Date(pull.closed_at),
+    merged_at: pull.merged_at && new Date(pull.merged_at),
     assignees: pull.assignees.map((assignee: User) => ({
       login: assignee.login,
     })),
