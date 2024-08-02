@@ -224,6 +224,27 @@ export async function fetchPullDetail(pull: PrismaClient.Pull & { repo: PrismaCl
   return toPullDetailResponse(response.data);
 }
 
+export async function fetchEventsByPulls(
+  pull: PrismaClient.Pull & { repo: PrismaClient.Repository },
+): Promise<{ event: string; createdAt: Date }[]> {
+  console.log(`fetch ${pull.repo.fullName}#${pull.number} events`);
+  const response = await axios.get(
+    `https://api.github.com/repos/${pull.repo.fullName}/issues/${pull.number}/events`,
+    {
+      headers: {
+        Authorization: `Bearer ${GH_TOKEN}`,
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+    },
+  );
+
+  return response.data.map((row: any) => ({
+    event: row.event,
+    createdAt: new Date(row.created_at),
+  }));
+}
+
 export async function fetchRepository(repo: string) {
   const response = await axios.get(`https://api.github.com/repos/${repo}`, {
     headers: {
@@ -268,6 +289,5 @@ export async function fetchRateLimit(): Promise<RateLimit> {
       'X-GitHub-Api-Version': '2022-11-28',
     },
   });
-  console.log({ remaining: response.data.rate.remaining, reset: response.data.rate.reset });
   return response.data;
 }

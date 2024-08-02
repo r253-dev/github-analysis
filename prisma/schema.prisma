@@ -48,7 +48,7 @@ model Pull {
 }
 
 model PullDetail {
-  pullId         Int     @id
+  pullId         Int       @id
   body           String?
   merged         Boolean
   comments       Int
@@ -57,7 +57,8 @@ model PullDetail {
   additions      Int
   deletions      Int
   changedFiles   Int
-  pull           Pull    @relation(fields: [pullId], references: [id])
+  openedAt       DateTime?
+  pull           Pull      @relation(fields: [pullId], references: [id])
 
   @@map("pull_details")
 }

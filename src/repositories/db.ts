@@ -114,6 +114,17 @@ export async function upsertPullDetail(pull: PrismaClient.Pull, detail: PullDeta
   }
 }
 
+export async function updatePullOpenedAt(pull: PrismaClient.Pull, openedAt: Date) {
+  await prisma.pullDetail.update({
+    data: {
+      openedAt,
+    },
+    where: {
+      pullId: pull.id,
+    },
+  });
+}
+
 export async function findAllPullsWhereCommitsIsEmptyByRepository(
   repository: PrismaClient.Repository,
   options: { limit: number },
@@ -134,6 +145,34 @@ export async function findAllPullsWhereCommitsIsEmptyByRepository(
     take: options.limit || DEFAULT_LIMIT,
   });
   return pulls;
+}
+
+export async function findAllPullsWhereOpenedAtIsEmpty(
+  repository: PrismaClient.Repository,
+  options: { limit: number },
+) {
+  return await prisma.pull.findMany({
+    where: {
+      repositoryId: repository.id,
+      OR: [
+        {
+          PullDetail: null,
+        },
+        {
+          PullDetail: {
+            openedAt: null,
+          },
+        },
+      ],
+    },
+    include: {
+      repo: true,
+    },
+    orderBy: {
+      number: 'asc',
+    },
+    take: options.limit || DEFAULT_LIMIT,
+  });
 }
 
 export async function createCommits(pull: PrismaClient.Pull, commits: Commit[]) {

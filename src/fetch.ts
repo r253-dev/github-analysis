@@ -3,6 +3,7 @@ import { initialize } from './initialize';
 import {
   fetchAllNewPulls,
   fetchCommitsByPull,
+  fetchEventsByPulls,
   fetchPullDetail,
   fetchRateLimit,
 } from './repositories/github';
@@ -16,6 +17,8 @@ import {
   findAllIncompletePullsByRepository,
   upsertPullDetail,
   removePullDetailsByPulls,
+  findAllPullsWhereOpenedAtIsEmpty,
+  updatePullOpenedAt,
 } from './repositories/db';
 
 export const prisma = new PrismaClient();
@@ -45,7 +48,6 @@ async function main() {
     {
       const rateLimit = await fetchRateLimit();
       const limit = Math.floor(rateLimit.rate.remaining / 2);
-      console.log(`limit: ${limit}, remaining: ${rateLimit.rate.remaining}`);
       const pulls = await findAllIncompletePullsByRepository(repository, {
         limit,
       });
@@ -58,13 +60,25 @@ async function main() {
     {
       const rateLimit = await fetchRateLimit();
       const limit = Math.floor(rateLimit.rate.remaining / 2);
-      console.log(`limit: ${limit}, remaining: ${rateLimit.rate.remaining}`);
       const pulls = await findAllPullsWhereCommitsIsEmptyByRepository(repository, {
         limit,
       });
       for (const pull of pulls) {
         const commits = await fetchCommitsByPull(pull);
         await createCommits(pull, commits);
+      }
+    }
+    // PRイベントの取得
+    {
+      const rateLimit = await fetchRateLimit();
+      const limit = Math.floor(rateLimit.rate.remaining / 2);
+      const pulls = await findAllPullsWhereOpenedAtIsEmpty(repository, { limit });
+      for (const pull of pulls) {
+        const events = await fetchEventsByPulls(pull);
+        const openedAt =
+          events.filter((row) => row.event === 'ready_for_review')?.slice(-1)[0]?.createdAt ||
+          pull.createdAt;
+        await updatePullOpenedAt(pull, openedAt);
       }
     }
   }
