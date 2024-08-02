@@ -9,7 +9,8 @@
     "start:fetch": "dotenv ts-node src/fetch.ts",
     "db:migrate": "prisma migrate deploy",
     "db:migrate:create": "prisma migrate dev --create-only --name ",
-    "prisma:generate": "prisma generate"
+    "prisma:generate": "prisma generate",
+    "setup": "npm run prisma:generate; npm run db:migrate"
   },
   "author": "",
   "license": "MIT",
