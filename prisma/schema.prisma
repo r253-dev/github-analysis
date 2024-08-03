@@ -24,8 +24,15 @@ model Commit {
   pull       Pull     @relation(fields: [pullId], references: [id])
 }
 
+model OutlierPull {
+  pullId Int  @id
+  pull   Pull @relation(fields: [pullId], references: [id])
+
+  @@map("outlier_pulls")
+}
+
 model Pull {
-  id           Int         @id @default(autoincrement())
+  id           Int          @id @default(autoincrement())
   number       Int
   state        String
   title        String
@@ -40,9 +47,10 @@ model Pull {
   baseRef      String
   repositoryId Int
   labels       Label[]
-  repo         Repository  @relation(fields: [repositoryId], references: [id])
+  repo         Repository   @relation(fields: [repositoryId], references: [id])
   commits      Commit[]
   PullDetail   PullDetail?
+  OutlierPull  OutlierPull?
 
   @@map("pulls")
 }
