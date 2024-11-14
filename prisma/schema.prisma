@@ -14,9 +14,9 @@ datasource db {
 }
 
 model Commit {
-  id         Int      @id @default(autoincrement())
+  id         BigInt   @id @default(autoincrement())
   nodeId     String
-  pullId     Int
+  pullId     BigInt
   sha        String
   message    String
   authorName String
@@ -25,14 +25,14 @@ model Commit {
 }
 
 model OutlierPull {
-  pullId Int  @id
-  pull   Pull @relation(fields: [pullId], references: [id])
+  pullId BigInt @id
+  pull   Pull   @relation(fields: [pullId], references: [id])
 
   @@map("outlier_pulls")
 }
 
 model Pull {
-  id           Int          @id @default(autoincrement())
+  id           BigInt       @id @default(autoincrement())
   number       Int
   state        String
   title        String
@@ -45,7 +45,7 @@ model Pull {
   draft        Boolean
   headRef      String
   baseRef      String
-  repositoryId Int
+  repositoryId BigInt
   labels       Label[]
   repo         Repository   @relation(fields: [repositoryId], references: [id])
   commits      Commit[]
@@ -56,7 +56,7 @@ model Pull {
 }
 
 model PullDetail {
-  pullId         Int       @id
+  pullId         BigInt    @id
   body           String?
   merged         Boolean
   comments       Int
@@ -72,7 +72,7 @@ model PullDetail {
 }
 
 model Label {
-  id          Int    @id @default(autoincrement())
+  id          BigInt @id @default(autoincrement())
   nodeId      String @unique
   name        String
   description String
@@ -82,7 +82,7 @@ model Label {
 }
 
 model Repository {
-  id          Int     @id @default(autoincrement())
+  id          BigInt  @id @default(autoincrement())
   nodeId      String  @unique
   name        String
   fullName    String  @unique
