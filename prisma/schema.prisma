@@ -14,7 +14,7 @@ datasource db {
 }
 
 model Commit {
-  id         BigInt   @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   nodeId     String
   pullId     BigInt
   sha        String
@@ -32,7 +32,7 @@ model OutlierPull {
 }
 
 model Pull {
-  id           BigInt       @id @default(autoincrement())
+  id           BigInt       @id
   number       Int
   state        String
   title        String
